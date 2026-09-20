@@ -1,53 +1,122 @@
+# Computer Vision Exam — Cat and Dog Image Classification
 
-# Prova Visão Computacional – Classificação de Imagens com Visão Computacional e IA
+A classical computer vision pipeline that classifies images as cat or dog. Images
+are preprocessed with OpenCV, flattened into raw pixel vectors, and classified by
+a linear Support Vector Machine.
 
-## Descrição do Problema
+Built as an exam for a Computer Vision course.
 
-O Objetivo deste projeto foi implementar um programa que realize a classificação de imagens de gatos e cachorros. Utilizando a prendizado de maquina e com os tratamentos de imagens com funções que vimos em sala.
+## Problem statement
 
+The task was to implement a program that classifies images of cats and dogs using
+machine learning, applying the image processing operations covered during the
+course rather than a pretrained deep learning model.
 
-## Justificativa das Técnicas Utilizadas
+## Pipeline
 
-   - Pré-processamento com OpenCV: As imagens passaram por redimensionamento, suavização com filtro Gaussiano e equalização de histograma para melhorar a          uniformidade da iluminação e realçar detalhes relevantes, como vimos em sala ao longo do semestre.
-   - Conversão para tons de cinza: Reduz complexidade e foca em formas e padrões, tornando mais simples de diferenciar as imagens.
-   - Flattening das imagens: Como forma simples de representar cada imagem como vetor de características.
-   - Classificador SVM: Escolhi por ser simples de se usar e por já termos utilizados em outras matérias na faculdade, o SVM tenta separar as classes das          imagens com uma linha, nesse caso como estamos tratando de apenas duas categorias, sendo cachorro e gato, o SVM se torna um bom exemplo de classificador.
-   - Avaliação com métricas clássicas: Precisão, recall e F1-score para analisar a performance da classificação, são as métricas padrões que mudamos quando        estamos aprendendo aprendizado de máquina.
+Every image, in both training and test sets, goes through the same four
+preprocessing steps:
 
-## Etapas Realizadas
+| Step | Operation | Purpose |
+| --- | --- | --- |
+| 1 | `cv2.resize` to 128x128 | gives every sample a fixed dimensionality |
+| 2 | `cv2.GaussianBlur` with a 5x5 kernel | suppresses high-frequency noise |
+| 3 | `cv2.cvtColor` to grayscale | drops colour, keeping shape and texture |
+| 4 | `cv2.equalizeHist` | normalizes contrast across differently lit photos |
 
-1. Carregamento das imagens da pasta imagens,  sendo 3 de gatos e 3 de cachorros.
+The resulting 128x128 image is then flattened into a single vector of 16,384
+features, which is what the classifier consumes.
 
-2. Pré-processamento:
-   - Redimensionamento para 128x128 com cv2.resize
-   - Filtro Gaussiano (5x5) com cv2.GaussianBlur
-   - Conversão para escala de cinza com cv2.cvtColor(imagem_suavizada, cv2.COLOR_BGR2GRAY)
-   - Equalização de histograma com cv2.equalizeHist
+## Rationale for the techniques
 
-3. Visualização
-   - Retornamos a imagem da função de processamento e usando a biblioteca matplotlib trazemos as imagens alteradas na tela
+Histogram equalization and Gaussian smoothing were chosen to reduce the variance
+that comes from photos taken under very different lighting conditions, so the
+classifier sees more uniform input.
 
-4. Transformação das imagens em vetores flatten, pois o SVM trabalha com dado em forma de vetor, não com a imagem em si.
+Grayscale conversion cuts the feature count by two thirds and forces the model to
+rely on shape and texture instead of coat colour, which is not a reliable
+discriminator between the two species.
 
-5. Divisão dos dados em treino (80%) e teste (20%) com train_test_split, trazendo stratufy=y para que a quantidade de gatos e cachorros
-   em cada lado seja semore a mesma.
+Flattening is the simplest possible way to represent an image as a feature
+vector, with no engineered descriptors involved.
 
-6. Treinamento e Classificação com um modelo SVM
-   - Carregar dataset le todas as imagens do dataset, faz o pré-processamento delas e transforma cada imagem em um vetor.
-   - Esses dados são então usados para treinar o modelo SVM.
-   - Então pré-processamos as imagens da pasta Teste.
-   - O modelo treinado então faz a predição para cada valor do vetor de Teste, para verificar se é gato ou cachorro.
-   - Compara essas previsões do modelo com os rótulos reais
+A Support Vector Machine with a linear kernel fits a binary problem well and was
+already familiar from previous coursework. With only two classes, a single
+separating hyperplane is a natural choice.
 
-7. Resultados
-   - Exibe as métricas com a avaliação do modelo, sendo elas, precisão, recall e F1-score.
-   - Traz as imagens pré-processadas com seus rótulos reais, 
+Precision, recall and F1-score were used for evaluation because accuracy alone
+hides how errors are distributed between the two classes.
 
-## Resultados Obtidos
+## Dataset
 
-O modelo treinado conseguiu classificar corretamente as imagens de teste. Abaixo está um exemplo das métricas de avaliação:
-
+```text
+Treino/    1000 training images: 455 cats (cat.N.jpg), 545 dogs (dog.N.jpg)
+Teste/     6 test images: gato1-3.jpg and cachorro1-3.jpg
 ```
+
+Labels are derived from the filenames. Training images containing `cat` are
+labelled `gato` and those containing `dog` are labelled `cachorro`; test images
+follow the same logic on their Portuguese names.
+
+Training and test sets are two fixed, separate folders. There is no random split:
+the six test images are listed explicitly in the script.
+
+## Project structure
+
+```text
+college-computer-vision-exam/
+├── prova.py    # preprocessing, training, prediction and visualization
+├── Treino/     # training images
+└── Teste/      # test images
+```
+
+## Requirements
+
+- Python 3
+- opencv-python
+- scikit-learn
+- matplotlib
+- numpy
+
+## Setup
+
+```bash
+python -m venv .venv
+
+# Linux / macOS
+source .venv/bin/activate
+# Windows
+.venv\Scripts\activate
+
+pip install opencv-python scikit-learn matplotlib numpy
+```
+
+## Running
+
+```bash
+python prova.py
+```
+
+The script must be run from the repository root, since the image paths
+`Treino/` and `Teste/` are resolved relative to the working directory.
+
+It prints the classification report to the terminal and then opens a matplotlib
+window with the six preprocessed test images and their true labels.
+
+## Steps performed
+
+1. Load every image from `Treino/` and derive its label from the filename.
+2. Preprocess each one: resize, Gaussian blur, grayscale, histogram equalization.
+3. Flatten each preprocessed image into a 16,384-dimensional vector.
+4. Train an `SVC(kernel='linear')` on the full training set.
+5. Apply the identical preprocessing to the six test images.
+6. Predict their classes and compare against the true labels.
+7. Print precision, recall and F1-score, then display the preprocessed test
+   images with their labels.
+
+## Results
+
+```text
 === Métricas de Avaliação ===
               precision    recall  f1-score   support
 
@@ -59,11 +128,22 @@ O modelo treinado conseguiu classificar corretamente as imagens de teste. Abaixo
 weighted avg     0.6667    0.6667    0.6667         6
 ```
 
-## Tempo Total Gasto
-   
-   - Demorou cerca 1 hora e 40 minutos para o desenvolvimmento e documentação. 
+The model classified four of the six test images correctly, with errors split
+evenly between the two classes.
 
-## Dificuldades Encontradas
+Two factors bound this result. A test set of six images makes the metrics coarse,
+since every single image moves accuracy by roughly 17 percentage points. And a
+linear SVM over raw pixel intensities has no notion of spatial structure: two
+photographs of the same animal at different positions or scales produce entirely
+different feature vectors. Closing the gap would require either engineered
+descriptors such as HOG, or a convolutional model.
 
-   - Trazer o dataset para treinamento, pois a biblioteca passada não funcionou, então foi necessário baixar um a parte para fazer o
-     treinamento de forma correta.   
+## Time spent
+
+Roughly 1 hour and 40 minutes, including development and documentation.
+
+## Difficulties encountered
+
+Obtaining a usable training dataset was the main obstacle. The library suggested
+for downloading it did not work, so the dataset had to be sourced separately and
+added to the repository manually.
